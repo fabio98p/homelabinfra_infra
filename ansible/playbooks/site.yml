@@ -1,0 +1,8 @@
+---
+# Master playbook — applies all roles to the full homelab inventory
+- name: Configure all homelab hosts
+  hosts: homelab
+  gather_facts: true
+
+  roles:
+    - common
