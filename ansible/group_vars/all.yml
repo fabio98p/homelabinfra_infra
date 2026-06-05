@@ -1,0 +1,28 @@
+---
+# Variables that apply to every host
+
+timezone: "Europe/Rome"
+locale: "it_IT.UTF-8"
+
+ntp_servers:
+  - "0.it.pool.ntp.org"
+  - "1.it.pool.ntp.org"
+
+dns_servers:
+  - "1.1.1.1"
+  - "8.8.8.8"
+
+# Packages installed on all hosts
+common_packages:
+  - curl
+  - vim
+  - htop
+  - git
+  - unzip
+  - python3
+  - python3-pip
+
+# SSH hardening
+ssh_port: 22
+ssh_permit_root_login: "no"
+ssh_password_authentication: "no"

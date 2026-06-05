@@ -1,0 +1,11 @@
+---
+# Variables specific to the [servers] group
+
+firewall_enabled: true
+firewall_allowed_ports:
+  - "22/tcp"
+  - "80/tcp"
+  - "443/tcp"
+
+# Unattended upgrades
+unattended_upgrades_enabled: true
