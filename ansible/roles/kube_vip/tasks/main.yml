@@ -1,0 +1,21 @@
+---
+# kube-vip fornisce un IP virtuale (VIP) stabile per l'API server di k3s.
+# Il manifest viene scritto nella directory che k3s monitora automaticamente:
+# quando k3s parte, trova il file e lo applica come se fosse un manifest Kubernetes normale.
+# Così il VIP è disponibile già al primo avvio del cluster.
+
+- name: Crea la directory dei manifests statici di k3s (se non esiste)
+  ansible.builtin.file:
+    path: /var/lib/rancher/k3s/server/manifests
+    state: directory
+    owner: root
+    group: root
+    mode: "0750"
+
+- name: Scrivi il manifest di kube-vip
+  ansible.builtin.template:
+    src: kube-vip.yaml.j2
+    dest: /var/lib/rancher/k3s/server/manifests/kube-vip.yaml
+    owner: root
+    group: root
+    mode: "0640"

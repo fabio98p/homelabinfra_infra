@@ -1,0 +1,6 @@
+---
+- name: Bootstrap ArgoCD nel cluster k3s
+  hosts: k3s-1
+  become: true
+  roles:
+    - argocd

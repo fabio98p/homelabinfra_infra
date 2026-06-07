@@ -1,0 +1,14 @@
+k3s_version: "v1.32.3+k3s1"
+
+kube_vip_version: "v0.8.9"
+kube_vip_ip: "192.168.122.139"
+
+# Interfaccia di rete delle VM k3s (su Proxmox VirtIO è tipicamente ens18 o eth0).
+# Verifica con: ip link show   su uno dei nodi k3s dopo il primo avvio.
+k3s_network_interface: "ens18"
+
+k3s_api_server_url: "https://192.168.122.139:6443"
+
+# IP diretto del nodo init, usato da k3s-2/3 per il primo join
+# (il VIP potrebbe non essere ancora attivo in quel momento)
+k3s_init_node_ip: "192.168.122.131"

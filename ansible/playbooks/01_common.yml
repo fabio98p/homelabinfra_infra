@@ -1,0 +1,6 @@
+---
+- name: Configurazione base OS (tutti i nodi)
+  hosts: all
+  become: true
+  roles:
+    - common

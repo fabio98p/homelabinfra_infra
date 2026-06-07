@@ -1,0 +1,130 @@
+---
+- name: Imposta vm.max_map_count (requisito OpenSearch)
+  ansible.posix.sysctl:
+    name: vm.max_map_count
+    value: "262144"
+    state: present
+    sysctl_file: /etc/sysctl.d/99-opensearch.conf
+    reload: true
+
+- name: Installa Podman e podman-compose
+  ansible.builtin.apt:
+    name:
+      - podman
+      - podman-compose
+    state: present
+
+- name: Crea la directory di lavoro per i servizi platform
+  ansible.builtin.file:
+    path: "{{ compose_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0750"
+
+- name: Crea la directory di configurazione di Vault
+  ansible.builtin.file:
+    path: "{{ compose_dir }}/vault/config"
+    state: directory
+    owner: root
+    group: root
+    mode: "0750"
+
+- name: Copia il file docker-compose.yml
+  ansible.builtin.copy:
+    src: docker-compose.yml
+    dest: "{{ compose_dir }}/docker-compose.yml"
+    owner: root
+    group: root
+    mode: "0640"
+
+- name: Genera il file .env con le credenziali
+  ansible.builtin.template:
+    src: platform.env.j2
+    dest: "{{ compose_dir }}/.env"
+    owner: root
+    group: root
+    mode: "0640"
+
+- name: Genera la configurazione di Vault
+  ansible.builtin.template:
+    src: vault.hcl.j2
+    dest: "{{ compose_dir }}/vault/config/vault.hcl"
+    owner: root
+    group: root
+    mode: "0640"
+
+- name: Installa il servizio systemd per i container platform
+  ansible.builtin.template:
+    src: homelab-platform.service.j2
+    dest: /etc/systemd/system/homelab-platform.service
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Ricarica systemd
+
+- name: Ricarica systemd se necessario
+  ansible.builtin.meta: flush_handlers
+
+- name: Abilita e avvia il servizio homelab-platform
+  ansible.builtin.systemd:
+    name: homelab-platform
+    state: started
+    enabled: true
+
+- name: Attendi che OpenSearch sia raggiungibile (può richiedere 60-90 sec al primo avvio)
+  ansible.builtin.wait_for:
+    host: "127.0.0.1"
+    port: 9200
+    timeout: 180
+    delay: 15
+
+- name: Attendi che Vault sia raggiungibile
+  ansible.builtin.wait_for:
+    host: "127.0.0.1"
+    port: 8200
+    timeout: 60
+    delay: 5
+
+- name: Controlla se Vault è già stato inizializzato
+  ansible.builtin.command: >
+    podman exec vault vault status -format=json
+  register: vault_status_raw
+  # rc 0 = attivo e unsealed, rc 1 = sealed, rc 2 = non inizializzato
+  failed_when: vault_status_raw.rc not in [0, 1, 2]
+  changed_when: false
+
+- name: Inizializza Vault (solo se non ancora inizializzato)
+  ansible.builtin.command: >
+    podman exec vault vault operator init -key-shares=5 -key-threshold=3 -format=json
+  environment:
+    VAULT_ADDR: "http://127.0.0.1:8200"
+  register: vault_init_raw
+  when: vault_status_raw.rc == 2
+
+- name: Salva l'output di Vault init in locale (su CachyOS)
+  ansible.builtin.copy:
+    content: "{{ vault_init_raw.stdout }}"
+    dest: "{{ playbook_dir }}/../vault_init_output.json"
+    mode: "0600"
+  delegate_to: localhost
+  when: vault_init_raw is not skipped
+
+- name: Istruzioni post-inizializzazione
+  ansible.builtin.debug:
+    msg: |
+      ============================================================
+      Vault inizializzato con successo!
+      Le chiavi di unseal e il root token sono stati salvati in:
+        ansible/vault_init_output.json   (sul tuo CachyOS)
+
+      IMPORTANTE: cifra subito il file con:
+        ansible-vault encrypt ansible/vault_init_output.json
+
+      Per unsealing manuale (dopo ogni riavvio di Vault):
+        cat ansible/vault_init_output.json   # o decrypt se cifrato
+        podman exec -it vault vault operator unseal <chiave_1>
+        podman exec -it vault vault operator unseal <chiave_2>
+        podman exec -it vault vault operator unseal <chiave_3>
+      ============================================================
+  when: vault_init_raw is not skipped

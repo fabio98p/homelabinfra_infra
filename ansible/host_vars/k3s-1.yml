@@ -1,0 +1,3 @@
+# k3s-1 è il nodo che inizializza il cluster (--cluster-init).
+# Gli altri due eseguono il join verso di lui.
+k3s_init_node: true

@@ -1,0 +1,20 @@
+---
+- name: Prerequisiti OS per Longhorn (tutti i nodi k3s)
+  hosts: k3s_nodes
+  become: true
+  roles:
+    - k3s_prereqs
+
+# kube-vip va piazzato PRIMA che k3s parta su k3s-1,
+# così viene applicato automaticamente all'avvio del cluster.
+- name: Prepara manifest kube-vip sul nodo init
+  hosts: k3s-1
+  become: true
+  roles:
+    - kube_vip
+
+- name: Installazione k3s (init su k3s-1, poi join su k3s-2/3)
+  hosts: k3s_nodes
+  become: true
+  roles:
+    - k3s_server

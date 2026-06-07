@@ -1,0 +1,54 @@
+---
+# Eseguire DOPO che k3s e ArgoCD sono operativi.
+# Configura il metodo di autenticazione Kubernetes su Vault,
+# permettendo ai pod del cluster di autenticarsi con Vault.
+#
+# Prerequisiti:
+#   - Vault inizializzato e unsealed (fatto manualmente)
+#   - k3s attivo con tutti i nodi Ready
+#   - VAULT_TOKEN esportato: export VAULT_TOKEN='<root_token_dal_file_init>'
+#
+# Lancia con: ansible-playbook playbooks/05_vault_k8s_auth.yml --ask-vault-pass
+
+- name: Configura Vault Kubernetes auth method
+  hosts: platform
+  become: true
+
+  vars:
+    vault_addr: "http://127.0.0.1:8200"
+    # kubeconfig copiato da k3s-1 durante il playbook 03_k3s
+    kubeconfig_path: "~/.kube/config"
+
+  tasks:
+    - name: Abilita il metodo di autenticazione Kubernetes su Vault
+      ansible.builtin.command: >
+        podman exec vault vault auth enable kubernetes
+      environment:
+        VAULT_ADDR: "{{ vault_addr }}"
+        VAULT_TOKEN: "{{ vault_root_token }}"
+      register: vault_auth_enable
+      failed_when:
+        - vault_auth_enable.rc != 0
+        - "'path is already in use' not in vault_auth_enable.stderr"
+      changed_when: vault_auth_enable.rc == 0
+
+    - name: Leggi il CA certificate del cluster k3s
+      ansible.builtin.slurp:
+        src: /etc/rancher/k3s/k3s.yaml
+      delegate_to: k3s-1
+      register: k3s_kubeconfig_raw
+
+    - name: Configura Vault con i parametri del cluster k3s
+      ansible.builtin.command: >
+        podman exec vault vault write auth/kubernetes/config
+        kubernetes_host="{{ k3s_api_server_url }}"
+      environment:
+        VAULT_ADDR: "{{ vault_addr }}"
+        VAULT_TOKEN: "{{ vault_root_token }}"
+
+    - name: Configurazione completata
+      ansible.builtin.debug:
+        msg: |
+          Vault Kubernetes auth abilitato.
+          I pod del cluster possono ora autenticarsi con Vault tramite il loro ServiceAccount.
+          Prossimo step: creare policy e role Vault nella repo gitops (via ArgoCD).

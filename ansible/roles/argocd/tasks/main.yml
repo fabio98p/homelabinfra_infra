@@ -1,0 +1,73 @@
+---
+# ArgoCD versione pinned: aggiorna ARGOCD_VERSION per aggiornare.
+# Manifest ufficiale: https://github.com/argoproj/argo-cd/releases
+
+- name: Imposta la versione di ArgoCD da installare
+  ansible.builtin.set_fact:
+    argocd_version: "v2.13.3"
+
+- name: Crea il namespace argocd
+  ansible.builtin.command: >
+    k3s kubectl create namespace argocd
+  register: ns_create
+  failed_when:
+    - ns_create.rc != 0
+    - "'already exists' not in ns_create.stderr"
+  changed_when: ns_create.rc == 0
+
+- name: Scarica il manifest ufficiale di ArgoCD
+  ansible.builtin.get_url:
+    url: "https://raw.githubusercontent.com/argoproj/argo-cd/{{ argocd_version }}/manifests/install.yaml"
+    dest: /tmp/argocd-install.yaml
+    mode: "0644"
+
+- name: Applica il manifest di ArgoCD al cluster
+  ansible.builtin.command: >
+    k3s kubectl apply -f /tmp/argocd-install.yaml -n argocd
+  register: argocd_apply
+  changed_when: "'configured' in argocd_apply.stdout or 'created' in argocd_apply.stdout"
+
+- name: Attendi che il deployment argocd-server sia disponibile
+  ansible.builtin.command: >
+    k3s kubectl -n argocd rollout status deployment/argocd-server --timeout=300s
+  register: argocd_rollout
+  changed_when: false
+
+- name: Attendi che tutti i pod ArgoCD siano Running
+  ansible.builtin.command: >
+    k3s kubectl -n argocd get pods -o jsonpath='{range .items[*]}{.status.phase}{"\n"}{end}'
+  register: argocd_pods_status
+  until: >
+    argocd_pods_status.stdout_lines | length > 0 and
+    (argocd_pods_status.stdout_lines | select('ne', 'Running') | list | length) == 0
+  retries: 30
+  delay: 10
+  changed_when: false
+
+- name: Leggi la password iniziale dell'admin ArgoCD
+  ansible.builtin.command: >
+    k3s kubectl -n argocd get secret argocd-initial-admin-secret
+    -o jsonpath='{.data.password}'
+  register: argocd_password_b64
+  changed_when: false
+
+- name: Stampa le informazioni di accesso ad ArgoCD
+  ansible.builtin.debug:
+    msg: |
+      ============================================================
+      ArgoCD installato con successo!
+
+      Per accedere alla UI di ArgoCD, apri un port-forward dal tuo CachyOS:
+        kubectl port-forward svc/argocd-server -n argocd 8080:443
+
+      Poi apri il browser su: https://localhost:8080
+
+      Credenziali iniziali:
+        Utente:   admin
+        Password: {{ argocd_password_b64.stdout | b64decode }}
+
+      IMPORTANTE: cambia la password al primo accesso.
+
+      Prossimo step: collega ArgoCD alla tua repository gitops
+      dalla UI o con il comando argocd CLI.
+      ============================================================

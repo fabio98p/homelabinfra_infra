@@ -1,0 +1,37 @@
+---
+# Prerequisiti di sistema operativo per Longhorn (storage distribuito).
+# Longhorn stesso viene installato da ArgoCD, ma questi pacchetti
+# devono essere presenti sui nodi prima che Longhorn parta.
+
+- name: Installa open-iscsi e nfs-common (richiesti da Longhorn)
+  ansible.builtin.apt:
+    name:
+      - open-iscsi
+      - nfs-common
+    state: present
+
+- name: Avvia e abilita il servizio iscsid
+  ansible.builtin.systemd:
+    name: iscsid
+    state: started
+    enabled: true
+
+- name: Carica il modulo kernel iscsi_tcp
+  community.general.modprobe:
+    name: iscsi_tcp
+    state: present
+
+- name: Carica il modulo kernel dm_thin_pool
+  community.general.modprobe:
+    name: dm_thin_pool
+    state: present
+
+- name: Rendi i moduli kernel persistenti al riavvio
+  ansible.builtin.copy:
+    dest: /etc/modules-load.d/longhorn.conf
+    content: |
+      iscsi_tcp
+      dm_thin_pool
+    owner: root
+    group: root
+    mode: "0644"

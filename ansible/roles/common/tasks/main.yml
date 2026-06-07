@@ -1,0 +1,76 @@
+---
+- name: Aggiorna la cache apt
+  ansible.builtin.apt:
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Aggiorna tutti i pacchetti installati
+  ansible.builtin.apt:
+    upgrade: dist
+  register: apt_upgrade
+
+- name: Installa pacchetti comuni
+  ansible.builtin.apt:
+    name:
+      - curl
+      - ca-certificates
+      - gnupg
+      - lsb-release
+      - qemu-guest-agent
+      - vim
+      - htop
+      - less
+    state: present
+
+- name: Avvia e abilita qemu-guest-agent
+  ansible.builtin.systemd:
+    name: qemu-guest-agent
+    state: started
+    enabled: true
+
+- name: Imposta il timezone
+  community.general.timezone:
+    name: "{{ timezone }}"
+  notify: Riavvia cron
+
+- name: Installa systemd-timesyncd per la sincronizzazione oraria
+  ansible.builtin.apt:
+    name: systemd-timesyncd
+    state: present
+
+- name: Abilita e avvia systemd-timesyncd
+  ansible.builtin.systemd:
+    name: systemd-timesyncd
+    state: started
+    enabled: true
+
+- name: Hardening SSH - disabilita accesso con password
+  ansible.builtin.lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: "^#?PasswordAuthentication"
+    line: "PasswordAuthentication no"
+    state: present
+  notify: Riavvia sshd
+
+- name: Hardening SSH - disabilita login root
+  ansible.builtin.lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: "^#?PermitRootLogin"
+    line: "PermitRootLogin no"
+    state: present
+  notify: Riavvia sshd
+
+- name: Hardening SSH - disabilita autenticazione challenge-response
+  ansible.builtin.lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: "^#?ChallengeResponseAuthentication"
+    line: "ChallengeResponseAuthentication no"
+    state: present
+  notify: Riavvia sshd
+
+- name: Riavvia subito sshd se ci sono modifiche pendenti
+  ansible.builtin.meta: flush_handlers
+
+- name: Rimuovi pacchetti non necessari (autoremove)
+  ansible.builtin.apt:
+    autoremove: true

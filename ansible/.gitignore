@@ -1,0 +1,13 @@
+# Secret di Vault inizializzato (salvato localmente, MAI su git)
+vault_init_output.json
+
+# File con la password di ansible-vault (se mai aggiunto)
+.vault_password_file
+
+# Cache Ansible
+.cache/
+__pycache__/
+*.retry
+
+# Kubeconfig locale (viene copiato da k3s-1)
+kubeconfig

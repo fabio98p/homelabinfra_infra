@@ -1,0 +1,10 @@
+---
+- name: Riavvia sshd
+  ansible.builtin.systemd:
+    name: sshd
+    state: restarted
+
+- name: Riavvia cron
+  ansible.builtin.systemd:
+    name: cron
+    state: restarted

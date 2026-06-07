@@ -1,0 +1,6 @@
+---
+- name: Configurazione VM Platform (OpenSearch, Dashboards, Vault)
+  hosts: platform
+  become: true
+  roles:
+    - platform_services
