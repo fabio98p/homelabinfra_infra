@@ -3,7 +3,7 @@
 #
 # IMPORTANTE: il token NON va messo qui. Passalo come variabile d'ambiente
 # prima di lanciare i comandi:
-#   export TF_VAR_proxmox_api_token='terraform@pve!provider=IL-TUO-SECRET'
+#   export TF_VAR_proxmox_api_token='terraform@pve!provider=74bfec2c-de26-4a64-8dd9-c7eb36198a2d'
 
 proxmox_endpoint = "https://192.168.122.101:8006/" # <-- IP/porta del tuo Proxmox
 
