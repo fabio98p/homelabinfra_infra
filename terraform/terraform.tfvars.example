@@ -1,16 +1,27 @@
-environment  = "homelab"
-network_cidr = "192.168.1.0/24"
+# Copia questo file in "terraform.tfvars" e metti i TUOI valori reali.
+# terraform.tfvars e' nel .gitignore: non finira' su GitHub.
+#
+# IMPORTANTE: il token NON va messo qui. Passalo come variabile d'ambiente
+# prima di lanciare i comandi:
+#   export TF_VAR_proxmox_api_token='terraform@pve!provider=IL-TUO-SECRET'
 
-# ── Proxmox ──────────────────────────────────────────────────────────────────
-proxmox_api_url      = "https://192.168.1.1:8006/api2/json"
-proxmox_user         = "root@pam"
-proxmox_password     = "changeme"
-proxmox_tls_insecure = true
-proxmox_node         = "pve"
+proxmox_endpoint = "https://192.168.1.10:8006/" # <-- IP/porta del tuo Proxmox
 
-# ── VM defaults ───────────────────────────────────────────────────────────────
-vm_template       = "ubuntu-22.04-template"
-vm_storage        = "local-lvm"
-vm_default_cores  = 2
-vm_default_memory = 2048
-vm_ssh_public_key = "ssh-ed25519 AAAA... user@homelab"
+proxmox_node    = "pve"       # nome del nodo
+image_datastore = "local"     # storage con content type "Import" abilitato
+vm_datastore    = "local-lvm" # storage per i dischi delle VM
+network_bridge  = "vmbr0"     # bridge di rete
+
+gateway   = "192.168.1.1" # <-- gateway della tua rete
+ip_prefix = 24            # /24
+
+ssh_public_key_path = "~/.ssh/homelab.pub" # chiave pubblica da iniettare
+ci_user             = "debian"
+
+# Le 4 VM. Adatta IP e vm_id alla tua rete. RAM totale qui = 14848 MB (~14,5 GB).
+vms = {
+  "platform" = { vm_id = 9010, cores = 2, memory = 3560, disk = 40, ip = "192.168.1.10" }
+  "k3s-1"    = { vm_id = 9011, cores = 2, memory = 4096, disk = 40, ip = "192.168.1.11" }
+  "k3s-2"    = { vm_id = 9012, cores = 2, memory = 4096, disk = 40, ip = "192.168.1.12" }
+  "k3s-3"    = { vm_id = 9013, cores = 2, memory = 4096, disk = 40, ip = "192.168.1.13" }
+}

@@ -1,15 +1,26 @@
 # Terraform
-terraform/.terraform/
-terraform/terraform.tfstate
-terraform/terraform.tfstate.backup
-terraform/terraform.tfstate.d/
-terraform/*.tfvars
-!terraform/terraform.tfvars.example
-terraform/crash.log
-terraform/override.tf
-terraform/override.tf.json
-terraform/*_override.tf
-terraform/*_override.tf.json
+# Stato di Terraform: contiene dati sensibili (anche il token). MAI committarlo.
+*.tfstate
+*.tfstate.*
+
+# Cartella di lavoro con i provider scaricati
+.terraform/
+crash.log
+crash.*.log
+
+# I tuoi valori reali (endpoint, IP, ecc.)
+terraform.tfvars
+*.auto.tfvars
+
+# File di override locali
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# NB: .terraform.lock.hcl NON e' qui apposta: il lock file VA committato,
+# serve a bloccare le versioni esatte dei provider per tutti.
+
 
 # Ansible
 ansible/*.retry
