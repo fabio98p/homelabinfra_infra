@@ -10,7 +10,7 @@ proxmox_endpoint = "https://192.168.122.101:8006/" # <-- IP/porta del tuo Proxmo
 proxmox_node    = "pvm1"
 image_datastore = "local"     # storage con content type "Import" abilitato
 vm_datastore    = "local-lvm" # storage per i dischi delle VM
-network_bridge  = "localnetwork"
+network_bridge  = "vmbr0"
 
 gateway   = "192.168.122.1" # <-- verifica che sia il gateway corretto della tua rete
 ip_prefix = 24              # /24
@@ -20,8 +20,8 @@ ci_user             = "debian"
 
 # Le 4 VM. RAM totale qui = 14848 MB (~14,5 GB).
 vms = {
-  "platform" = { vm_id = 9010, cores = 2, memory = 3560, disk = 40, ip = "192.168.122.130" }
-  "k3s-1"  = { vm_id = 9011, cores = 2, memory = 4096, disk = 40, ip = "192.168.122.131" }
-  "k3s-2"  = { vm_id = 9012, cores = 2, memory = 4096, disk = 40, ip = "192.168.122.132" }
-  "k3s-3"  = { vm_id = 9013, cores = 2, memory = 4096, disk = 40, ip = "192.168.122.133" }
+  "platform" = { vm_id = 9010, cores = 2, memory = 3560, disk = 15, ip = "192.168.122.130" }
+  "k3s-1"  = { vm_id = 9011, cores = 2, memory = 4096, disk = 10, ip = "192.168.122.131" }
+  "k3s-2"  = { vm_id = 9012, cores = 2, memory = 4096, disk = 10, ip = "192.168.122.132" }
+  "k3s-3"  = { vm_id = 9013, cores = 2, memory = 4096, disk = 10, ip = "192.168.122.133" }
 }
