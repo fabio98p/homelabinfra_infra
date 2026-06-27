@@ -1,10 +1,8 @@
-# Per cifrare la password, esegui:
-#   ansible-vault encrypt_string 'LA_TUA_PASSWORD' --name 'opensearch_admin_password'
-# e incolla l'output qui sotto al posto del placeholder.
-#
 # Requisiti password OpenSearch >= 2.12: min 8 char, maiuscola, minuscola, numero, simbolo.
 # Esempio valido: Homelab@2025
-opensearch_admin_password: CAMBIA_QUESTA_PASSWORD_CON_ANSIBLE_VAULT
+# Quando vorrai cifrare questa variabile in futuro:
+#   ansible-vault encrypt_string 'LatuaPassword' --name 'opensearch_admin_password'
+opensearch_admin_password: "Homelab@2025"
 
 opensearch_version: "2.17.1"
 opensearch_dashboards_version: "2.17.1"

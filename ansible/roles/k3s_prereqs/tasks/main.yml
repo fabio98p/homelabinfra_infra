@@ -15,16 +15,15 @@
     name: iscsid
     state: started
     enabled: true
+  when: not ansible_check_mode
 
 - name: Carica il modulo kernel iscsi_tcp
-  community.general.modprobe:
-    name: iscsi_tcp
-    state: present
+  ansible.builtin.command: modprobe iscsi_tcp
+  changed_when: false
 
 - name: Carica il modulo kernel dm_thin_pool
-  community.general.modprobe:
-    name: dm_thin_pool
-    state: present
+  ansible.builtin.command: modprobe dm_thin_pool
+  changed_when: false
 
 - name: Rendi i moduli kernel persistenti al riavvio
   ansible.builtin.copy:

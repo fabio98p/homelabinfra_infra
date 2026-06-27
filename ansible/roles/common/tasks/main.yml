@@ -27,11 +27,11 @@
     name: qemu-guest-agent
     state: started
     enabled: true
+  when: not ansible_check_mode
 
 - name: Imposta il timezone
-  community.general.timezone:
-    name: "{{ timezone }}"
-  notify: Riavvia cron
+  ansible.builtin.command: timedatectl set-timezone {{ timezone }}
+  changed_when: false
 
 - name: Installa systemd-timesyncd per la sincronizzazione oraria
   ansible.builtin.apt:

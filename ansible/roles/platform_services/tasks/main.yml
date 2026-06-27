@@ -1,11 +1,15 @@
 ---
 - name: Imposta vm.max_map_count (requisito OpenSearch)
-  ansible.posix.sysctl:
-    name: vm.max_map_count
-    value: "262144"
-    state: present
-    sysctl_file: /etc/sysctl.d/99-opensearch.conf
-    reload: true
+  ansible.builtin.copy:
+    dest: /etc/sysctl.d/99-opensearch.conf
+    content: "vm.max_map_count = 262144\n"
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Applica le impostazioni sysctl
+  ansible.builtin.command: sysctl --system
+  changed_when: false
 
 - name: Installa Podman e podman-compose
   ansible.builtin.apt:
@@ -71,6 +75,7 @@
     name: homelab-platform
     state: started
     enabled: true
+  when: not ansible_check_mode
 
 - name: Attendi che OpenSearch sia raggiungibile (può richiedere 60-90 sec al primo avvio)
   ansible.builtin.wait_for:
@@ -78,6 +83,7 @@
     port: 9200
     timeout: 180
     delay: 15
+  when: not ansible_check_mode
 
 - name: Attendi che Vault sia raggiungibile
   ansible.builtin.wait_for:
@@ -85,6 +91,7 @@
     port: 8200
     timeout: 60
     delay: 5
+  when: not ansible_check_mode
 
 - name: Controlla se Vault è già stato inizializzato
   ansible.builtin.command: >

@@ -1,6 +1,4 @@
 ---
-# Eseguito su k3s-1 dopo che tutti i nodi hanno fatto il join.
-
 - name: Attendi che tutti e 3 i nodi siano Ready
   ansible.builtin.command: >
     k3s kubectl get nodes -o jsonpath='{range .items[*]}{.status.conditions[-1].type}{"\n"}{end}'
@@ -9,20 +7,24 @@
   retries: 30
   delay: 15
   changed_when: false
+  when: not ansible_check_mode
 
 - name: Mostra lo stato del cluster
   ansible.builtin.command: k3s kubectl get nodes -o wide
   register: nodes_output
   changed_when: false
+  when: not ansible_check_mode
 
 - name: Stampa lo stato dei nodi
   ansible.builtin.debug:
     msg: "{{ nodes_output.stdout_lines }}"
+  when: not ansible_check_mode
 
 - name: Leggi il kubeconfig dal nodo
   ansible.builtin.slurp:
     src: /etc/rancher/k3s/k3s.yaml
   register: kubeconfig_raw
+  when: not ansible_check_mode
 
 - name: Copia il kubeconfig su CachyOS (con il VIP come server)
   ansible.builtin.copy:
@@ -30,6 +32,7 @@
     dest: "~/.kube/config"
     mode: "0600"
   delegate_to: localhost
+  when: not ansible_check_mode
 
 - name: Kubeconfig copiato
   ansible.builtin.debug:
@@ -38,3 +41,4 @@
       Puoi ora usare kubectl dal tuo terminale:
         kubectl get nodes
         kubectl get pods -A
+  when: not ansible_check_mode

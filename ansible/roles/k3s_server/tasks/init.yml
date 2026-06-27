@@ -1,10 +1,4 @@
 ---
-# Eseguito solo su k3s-1 (k3s_init_node: true).
-# --cluster-init: abilita etcd embedded e crea un nuovo cluster.
-# --tls-san: aggiunge il VIP kube-vip al certificato TLS dell'API server,
-#            così le connessioni all'IP virtuale sono valide.
-# --disable traefik: non installiamo Traefik, useremo ingress-nginx via ArgoCD.
-
 - name: Scarica e installa k3s (nodo init)
   ansible.builtin.shell: >
     curl -sfL https://get.k3s.io |
@@ -24,6 +18,7 @@
   retries: 20
   delay: 15
   changed_when: false
+  when: not ansible_check_mode
 
 - name: Attendi che kube-vip sia in esecuzione (il VIP deve essere up prima del join)
   ansible.builtin.command: >
@@ -33,12 +28,15 @@
   retries: 20
   delay: 10
   changed_when: false
+  when: not ansible_check_mode
 
 - name: Leggi il token di join del cluster
   ansible.builtin.slurp:
     src: /var/lib/rancher/k3s/server/node-token
   register: k3s_node_token_raw
+  when: not ansible_check_mode
 
 - name: Salva il token come fact accessibile dagli altri nodi
   ansible.builtin.set_fact:
     k3s_node_token: "{{ k3s_node_token_raw.content | b64decode | trim }}"
+  when: not ansible_check_mode

@@ -1,15 +1,11 @@
 ---
-# Eseguito su k3s-2 e k3s-3.
-# Si collegano al VIP (192.168.122.139) che a questo punto è già attivo su k3s-1.
-# --tls-san: anche i nodi che fanno join devono avere il VIP nel certificato.
-# --disable traefik: coerente con il nodo init.
-
 - name: Attendi che il VIP kube-vip sia raggiungibile dalla rete
   ansible.builtin.wait_for:
     host: "{{ kube_vip_ip }}"
     port: 6443
     timeout: 120
     delay: 5
+  when: not ansible_check_mode
 
 - name: Scarica e installa k3s (nodo che si unisce al cluster)
   ansible.builtin.shell: >
@@ -22,6 +18,7 @@
     --disable traefik
   args:
     creates: /usr/local/bin/k3s
+  when: not ansible_check_mode
 
 - name: Attendi che il nodo sia Ready nel cluster
   ansible.builtin.command: >
@@ -31,3 +28,4 @@
   retries: 20
   delay: 15
   changed_when: false
+  when: not ansible_check_mode

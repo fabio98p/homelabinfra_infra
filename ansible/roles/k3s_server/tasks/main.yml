@@ -7,15 +7,15 @@
 - name: Inizializza il cluster (solo su k3s-1)
   ansible.builtin.include_tasks: init.yml
   when:
-    - k3s_init_node | default(false)
+    - k3s_init_node | default(false) | bool
     - not k3s_binary.stat.exists
 
 - name: Esegui il join del cluster (su k3s-2 e k3s-3)
   ansible.builtin.include_tasks: join.yml
   when:
-    - not (k3s_init_node | default(false))
+    - not (k3s_init_node | default(false) | bool)
     - not k3s_binary.stat.exists
 
 - name: Operazioni post-installazione (kubeconfig, verifica)
   ansible.builtin.include_tasks: post_install.yml
-  when: k3s_init_node | default(false)
+  when: k3s_init_node | default(false) | bool
