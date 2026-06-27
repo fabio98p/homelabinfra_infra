@@ -1,5 +1,5 @@
 ---
-- name: Attendi che tutti e 3 i nodi siano Ready
+- name: Attendi che tutti i nodi siano Ready
   ansible.builtin.command: >
     k3s kubectl get nodes -o jsonpath='{range .items[*]}{.status.conditions[-1].type}{"\n"}{end}'
   register: all_nodes_status
