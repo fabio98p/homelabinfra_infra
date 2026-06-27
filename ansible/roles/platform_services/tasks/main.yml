@@ -34,6 +34,16 @@
     group: root
     mode: "0750"
 
+# Il processo vault nel container gira come uid 100 (utente 'vault' nell'immagine
+# HashiCorp ufficiale). La directory dati deve essere di sua proprietà.
+- name: Crea la directory dati di Vault con i permessi corretti
+  ansible.builtin.file:
+    path: "{{ compose_dir }}/vault/data"
+    state: directory
+    owner: "100"
+    group: "1000"
+    mode: "0750"
+
 - name: Copia il file docker-compose.yml
   ansible.builtin.copy:
     src: docker-compose.yml
@@ -70,10 +80,30 @@
 - name: Ricarica systemd se necessario
   ansible.builtin.meta: flush_handlers
 
-- name: Abilita e avvia il servizio homelab-platform
+# Le immagini vengono scaricate qui (OpenSearch ~1GB, Dashboards ~800MB, Vault ~200MB).
+# Questa operazione può richiedere diversi minuti in base alla connessione.
+# Separandola dall'avvio del servizio, il servizio systemd trova le immagini già pronte
+# e parte in pochi secondi senza timeout.
+- name: Scarica le immagini container (può richiedere diversi minuti al primo avvio)
+  ansible.builtin.command: podman-compose pull
+  args:
+    chdir: "{{ compose_dir }}"
+  timeout: 1800
+  changed_when: true
+  when: not ansible_check_mode
+
+# Ricrea i container la cui configurazione è cambiata nel compose file.
+# Se i container erano già up e la config non è cambiata, non li tocca.
+- name: Avvia o ricrea i container (applica eventuali modifiche al compose)
+  ansible.builtin.command: podman-compose up -d
+  args:
+    chdir: "{{ compose_dir }}"
+  changed_when: false
+  when: not ansible_check_mode
+
+- name: Abilita il servizio homelab-platform al boot
   ansible.builtin.systemd:
     name: homelab-platform
-    state: started
     enabled: true
   when: not ansible_check_mode
 
@@ -95,19 +125,21 @@
 
 - name: Controlla se Vault è già stato inizializzato
   ansible.builtin.command: >
-    podman exec vault vault status -format=json
+    podman exec -e VAULT_ADDR=http://127.0.0.1:8200 vault vault status -format=json
   register: vault_status_raw
-  # rc 0 = attivo e unsealed, rc 1 = sealed, rc 2 = non inizializzato
+  # rc 0 = unsealed, rc 2 = sealed (inizializzato o no), rc 1 = errore API.
+  # ATTENZIONE: rc=2 vale sia per "sealed" che per "not initialized" — non basta
+  # il return code. Il campo 'initialized' nel JSON è la fonte di verità.
   failed_when: vault_status_raw.rc not in [0, 1, 2]
   changed_when: false
 
 - name: Inizializza Vault (solo se non ancora inizializzato)
   ansible.builtin.command: >
-    podman exec vault vault operator init -key-shares=5 -key-threshold=3 -format=json
-  environment:
-    VAULT_ADDR: "http://127.0.0.1:8200"
+    podman exec -e VAULT_ADDR=http://127.0.0.1:8200 vault vault operator init -key-shares=5 -key-threshold=3 -format=json
   register: vault_init_raw
-  when: vault_status_raw.rc == 2
+  when:
+    - vault_status_raw.stdout != ""
+    - not (vault_status_raw.stdout | from_json).initialized
 
 - name: Salva l'output di Vault init in locale (su CachyOS)
   ansible.builtin.copy:
@@ -115,6 +147,7 @@
     dest: "{{ playbook_dir }}/../vault_init_output.json"
     mode: "0600"
   delegate_to: localhost
+  become: false
   when: vault_init_raw is not skipped
 
 - name: Istruzioni post-inizializzazione

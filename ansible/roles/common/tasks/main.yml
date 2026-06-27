@@ -22,10 +22,12 @@
       - less
     state: present
 
-- name: Avvia e abilita qemu-guest-agent
+# Non tentiamo di avviarlo ora: il device virtio non è ancora esposto da Proxmox
+# (agent { enabled = false } in Terraform). Il servizio partirà automaticamente
+# dopo il prossimo riavvio con agent abilitato lato Proxmox.
+- name: Abilita qemu-guest-agent al boot (senza avviarlo subito)
   ansible.builtin.systemd:
     name: qemu-guest-agent
-    state: started
     enabled: true
   when: not ansible_check_mode
 

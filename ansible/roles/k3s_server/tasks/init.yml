@@ -30,13 +30,3 @@
   changed_when: false
   when: not ansible_check_mode
 
-- name: Leggi il token di join del cluster
-  ansible.builtin.slurp:
-    src: /var/lib/rancher/k3s/server/node-token
-  register: k3s_node_token_raw
-  when: not ansible_check_mode
-
-- name: Salva il token come fact accessibile dagli altri nodi
-  ansible.builtin.set_fact:
-    k3s_node_token: "{{ k3s_node_token_raw.content | b64decode | trim }}"
-  when: not ansible_check_mode

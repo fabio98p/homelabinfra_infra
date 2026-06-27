@@ -1,7 +1,4 @@
 ---
-# ArgoCD versione pinned: aggiorna ARGOCD_VERSION per aggiornare.
-# Manifest ufficiale: https://github.com/argoproj/argo-cd/releases
-
 - name: Imposta la versione di ArgoCD da installare
   ansible.builtin.set_fact:
     argocd_version: "v2.13.3"
@@ -14,6 +11,7 @@
     - ns_create.rc != 0
     - "'already exists' not in ns_create.stderr"
   changed_when: ns_create.rc == 0
+  when: not ansible_check_mode
 
 - name: Scarica il manifest ufficiale di ArgoCD
   ansible.builtin.get_url:
@@ -26,12 +24,14 @@
     k3s kubectl apply -f /tmp/argocd-install.yaml -n argocd
   register: argocd_apply
   changed_when: "'configured' in argocd_apply.stdout or 'created' in argocd_apply.stdout"
+  when: not ansible_check_mode
 
 - name: Attendi che il deployment argocd-server sia disponibile
   ansible.builtin.command: >
     k3s kubectl -n argocd rollout status deployment/argocd-server --timeout=300s
   register: argocd_rollout
   changed_when: false
+  when: not ansible_check_mode
 
 - name: Attendi che tutti i pod ArgoCD siano Running
   ansible.builtin.command: >
@@ -43,6 +43,7 @@
   retries: 30
   delay: 10
   changed_when: false
+  when: not ansible_check_mode
 
 - name: Leggi la password iniziale dell'admin ArgoCD
   ansible.builtin.command: >
@@ -50,6 +51,7 @@
     -o jsonpath='{.data.password}'
   register: argocd_password_b64
   changed_when: false
+  when: not ansible_check_mode
 
 - name: Stampa le informazioni di accesso ad ArgoCD
   ansible.builtin.debug:
@@ -71,3 +73,4 @@
       Prossimo step: collega ArgoCD alla tua repository gitops
       dalla UI o con il comando argocd CLI.
       ============================================================
+  when: not ansible_check_mode

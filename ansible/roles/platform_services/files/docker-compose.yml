@@ -1,7 +1,7 @@
 services:
 
   opensearch:
-    image: opensearchproject/opensearch:${OPENSEARCH_VERSION}
+    image: docker.io/opensearchproject/opensearch:${OPENSEARCH_VERSION}
     container_name: opensearch
     environment:
       - discovery.type=single-node
@@ -20,7 +20,7 @@ services:
     restart: unless-stopped
 
   opensearch-dashboards:
-    image: opensearchproject/opensearch-dashboards:${OPENSEARCH_DASHBOARDS_VERSION}
+    image: docker.io/opensearchproject/opensearch-dashboards:${OPENSEARCH_DASHBOARDS_VERSION}
     container_name: opensearch-dashboards
     environment:
       - OPENSEARCH_HOSTS=["https://opensearch:9200"]
@@ -34,15 +34,15 @@ services:
     restart: unless-stopped
 
   vault:
-    image: hashicorp/vault:${VAULT_VERSION}
+    image: docker.io/hashicorp/vault:${VAULT_VERSION}
     container_name: vault
     cap_add:
       - IPC_LOCK
     environment:
       - VAULT_ADDR=http://0.0.0.0:8200
     volumes:
-      - ./vault/config:/vault/config:ro
-      - vault_data:/vault/data
+      - ./vault/config:/vault/config
+      - ./vault/data:/vault/data
     ports:
       - "8200:8200"
     command: vault server -config=/vault/config/vault.hcl
@@ -50,4 +50,3 @@ services:
 
 volumes:
   opensearch_data:
-  vault_data:

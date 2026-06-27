@@ -9,7 +9,7 @@ RemainAfterExit=yes
 WorkingDirectory={{ compose_dir }}
 ExecStart=/usr/bin/podman-compose up -d
 ExecStop=/usr/bin/podman-compose down
-TimeoutStartSec=300
+TimeoutStartSec=900
 
 [Install]
 WantedBy=multi-user.target

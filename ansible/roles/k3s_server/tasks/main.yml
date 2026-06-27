@@ -4,13 +4,30 @@
     path: /usr/local/bin/k3s
   register: k3s_binary
 
-- name: Inizializza il cluster (solo su k3s-1)
+- name: Inizializza il cluster (solo su k3s-1, solo se k3s non è ancora installato)
   ansible.builtin.include_tasks: init.yml
   when:
     - k3s_init_node | default(false) | bool
     - not k3s_binary.stat.exists
 
-- name: Esegui il join del cluster (su k3s-2 e k3s-3)
+# Legge il token sempre su k3s-1, anche nei re-run quando k3s è già installato.
+# Il token serve a k3s-2/3 per fare il join.
+- name: Leggi il token di join dal nodo init
+  ansible.builtin.slurp:
+    src: /var/lib/rancher/k3s/server/node-token
+  register: k3s_node_token_raw
+  when:
+    - k3s_init_node | default(false) | bool
+    - not ansible_check_mode
+
+- name: Rendi il token disponibile come fact agli altri nodi
+  ansible.builtin.set_fact:
+    k3s_node_token: "{{ k3s_node_token_raw.content | b64decode | trim }}"
+  when:
+    - k3s_init_node | default(false) | bool
+    - not ansible_check_mode
+
+- name: Esegui il join del cluster (su k3s-2 e k3s-3, solo se k3s non è ancora installato)
   ansible.builtin.include_tasks: join.yml
   when:
     - not (k3s_init_node | default(false) | bool)

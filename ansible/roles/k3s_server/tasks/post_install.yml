@@ -26,12 +26,22 @@
   register: kubeconfig_raw
   when: not ansible_check_mode
 
+- name: Crea la directory .kube su CachyOS se non esiste
+  ansible.builtin.file:
+    path: "~/.kube"
+    state: directory
+    mode: "0700"
+  delegate_to: localhost
+  become: false
+  when: not ansible_check_mode
+
 - name: Copia il kubeconfig su CachyOS (con il VIP come server)
   ansible.builtin.copy:
     content: "{{ kubeconfig_raw.content | b64decode | replace('127.0.0.1', kube_vip_ip) }}"
     dest: "~/.kube/config"
     mode: "0600"
   delegate_to: localhost
+  become: false
   when: not ansible_check_mode
 
 - name: Kubeconfig copiato
